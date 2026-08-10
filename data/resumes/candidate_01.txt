@@ -1,0 +1,30 @@
+Name: Aarav Sharma
+
+Email: aarav@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Python
+Machine Learning
+Pandas
+NumPy
+Scikit-learn
+SQL
+NLP
+Git
+GitHub
+TensorFlow
+
+Experience:
+1 year
+
+Projects:
+Machine Learning House Price Prediction
+Customer Churn Prediction
+NLP Sentiment Analysis
+
+Certifications:
+Machine Learning Certification
+Python Certification

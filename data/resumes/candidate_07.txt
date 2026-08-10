@@ -1,0 +1,30 @@
+Name: Ananya Patel
+
+Email: ananya@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Python
+Machine Learning
+Scikit-learn
+Pandas
+NumPy
+SQL
+NLP
+Transformers
+Git
+GitHub
+
+Experience:
+1.5 years
+
+Projects:
+Sentiment Analysis
+Resume Classification System
+NLP Chatbot
+
+Certifications:
+NLP Certification
+Machine Learning Certification

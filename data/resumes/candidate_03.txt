@@ -1,0 +1,29 @@
+Name: Priya Singh
+
+Email: priya@example.com
+
+Education:
+B.Tech Information Technology
+
+Skills:
+Python
+SQL
+Pandas
+NumPy
+Power BI
+Excel
+Tableau
+Matplotlib
+Seaborn
+
+Experience:
+1 year
+
+Projects:
+Sales Dashboard
+Customer Data Analysis
+Business Intelligence Dashboard
+
+Certifications:
+Power BI Certification
+Data Analytics Certification

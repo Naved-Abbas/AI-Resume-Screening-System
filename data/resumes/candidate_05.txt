@@ -1,0 +1,30 @@
+Name: Sneha Gupta
+
+Email: sneha@example.com
+
+Education:
+B.Tech Artificial Intelligence
+
+Skills:
+Python
+Deep Learning
+Machine Learning
+TensorFlow
+PyTorch
+NLP
+Pandas
+NumPy
+Scikit-learn
+SQL
+
+Experience:
+2 years
+
+Projects:
+Image Classification System
+Text Classification System
+Disease Prediction System
+
+Certifications:
+Deep Learning Certification
+Artificial Intelligence Certification

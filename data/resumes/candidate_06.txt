@@ -1,0 +1,30 @@
+Name: Rohan Mehta
+
+Email: rohan@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Python
+Pandas
+NumPy
+SQL
+Statistics
+Power BI
+Excel
+Matplotlib
+Seaborn
+Git
+
+Experience:
+1 year
+
+Projects:
+Customer Sales Analysis
+Data Visualization Dashboard
+Financial Data Analysis
+
+Certifications:
+Data Analytics Certification
+Python Certification

@@ -1,0 +1,11 @@
+candidate_id,name,email,resume_file
+1,Aarav Sharma,aarav@example.com,candidate_01.txt
+2,Rahul Verma,rahul@example.com,candidate_02.txt
+3,Priya Singh,priya@example.com,candidate_03.txt
+4,Aditya Kumar,aditya@example.com,candidate_04.txt
+5,Sneha Gupta,sneha@example.com,candidate_05.txt
+6,Rohan Mehta,rohan@example.com,candidate_06.txt
+7,Ananya Patel,ananya@example.com,candidate_07.txt
+8,Vikash Yadav,vikash@example.com,candidate_08.txt
+9,Neha Agarwal,neha@example.com,candidate_09.txt
+10,Arjun Malhotra,arjun@example.com,candidate_10.txt

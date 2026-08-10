@@ -1,0 +1,29 @@
+Name: Rahul Verma
+
+Email: rahul@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Python
+Machine Learning
+Pandas
+NumPy
+Scikit-learn
+SQL
+Git
+GitHub
+Docker
+
+Experience:
+2 years
+
+Projects:
+Customer Churn Prediction
+Credit Card Fraud Detection
+Movie Recommendation System
+
+Certifications:
+Python Certification
+Machine Learning Certification

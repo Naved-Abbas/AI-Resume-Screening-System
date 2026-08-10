@@ -1,0 +1,29 @@
+Job Title: Python Developer
+
+We are looking for a Python Developer to build and maintain software applications.
+
+Required Skills:
+Python
+Django
+Flask
+REST API
+SQL
+Git
+GitHub
+HTML
+CSS
+JavaScript
+
+Responsibilities:
+Develop Python applications.
+Build REST APIs.
+Work with databases.
+Write clean and maintainable code.
+Debug and test applications.
+Collaborate with development teams.
+
+Education:
+B.Tech or equivalent degree in Computer Science or related field.
+
+Experience:
+0-2 years of Python development experience.

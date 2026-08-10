@@ -1,0 +1,29 @@
+Job Title: Machine Learning Engineer
+
+We are looking for a Machine Learning Engineer with strong Python programming and machine learning knowledge.
+
+Required Skills:
+Python
+Machine Learning
+NumPy
+Pandas
+Scikit-learn
+TensorFlow
+SQL
+NLP
+Git
+GitHub
+
+Responsibilities:
+Build and deploy machine learning models.
+Clean and preprocess datasets.
+Perform exploratory data analysis.
+Develop predictive models.
+Evaluate machine learning model performance.
+Work with data science and engineering teams.
+
+Education:
+B.Tech or equivalent degree in Computer Science, Artificial Intelligence, Machine Learning, or related field.
+
+Experience:
+0-2 years of experience in machine learning or data science.

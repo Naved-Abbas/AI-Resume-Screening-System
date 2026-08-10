@@ -1,0 +1,30 @@
+Name: Vikash Yadav
+
+Email: vikash@example.com
+
+Education:
+B.Tech Information Technology
+
+Skills:
+HTML
+CSS
+JavaScript
+React
+Python
+Django
+SQL
+MongoDB
+Git
+GitHub
+
+Experience:
+2 years
+
+Projects:
+E-Commerce Website
+Portfolio Website
+Online Food Ordering System
+
+Certifications:
+Full Stack Development Certification
+Python Certification

@@ -1,0 +1,29 @@
+Name: Neha Agarwal
+
+Email: neha@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Python
+Machine Learning
+Pandas
+NumPy
+Scikit-learn
+SQL
+TensorFlow
+Power BI
+Git
+
+Experience:
+1 year
+
+Projects:
+House Price Prediction
+Customer Churn Prediction
+Sales Prediction System
+
+Certifications:
+Machine Learning Certification
+Data Science Certification

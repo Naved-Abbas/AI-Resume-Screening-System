@@ -1,0 +1,30 @@
+Name: Aditya Kumar
+
+Email: aditya@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Java
+Python
+SQL
+Django
+HTML
+CSS
+JavaScript
+Git
+GitHub
+MySQL
+
+Experience:
+1.5 years
+
+Projects:
+Restaurant Management System
+E-Commerce Website
+Student Management System
+
+Certifications:
+Java Certification
+Web Development Certification

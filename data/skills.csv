@@ -1,0 +1,35 @@
+skill,category
+Python,Programming
+C++,Programming
+Java,Programming
+JavaScript,Programming
+HTML,Web Development
+CSS,Web Development
+React,Web Development
+Django,Backend
+Flask,Backend
+FastAPI,Backend
+SQL,Database
+MySQL,Database
+PostgreSQL,Database
+MongoDB,Database
+Pandas,Data Science
+NumPy,Data Science
+Matplotlib,Data Science
+Seaborn,Data Science
+Scikit-learn,Machine Learning
+Machine Learning,Machine Learning
+Deep Learning,AI
+NLP,Natural Language Processing
+TensorFlow,Deep Learning
+PyTorch,Deep Learning
+Transformers,NLP
+Git,Tools
+GitHub,Tools
+Docker,DevOps
+AWS,Cloud
+Azure,Cloud
+Power BI,Data Analytics
+Tableau,Data Analytics
+Excel,Data Analytics
+Statistics,Data Analytics

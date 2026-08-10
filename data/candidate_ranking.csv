@@ -1,0 +1,11 @@
+Rank,Candidate,Text Similarity,Skill Match,Final Score,Matched Skills,Missing Skills,Recommendation
+1,candidate_01.pdf,44.24,100.0,66.54,"git, github, machine learning, nlp, numpy, pandas, python, scikit-learn, sql, tensorflow",,Recommended
+2,candidate_07.pdf,33.45,90.0,56.07,"git, github, machine learning, nlp, numpy, pandas, python, scikit-learn, sql",tensorflow,Consider
+3,candidate_09.pdf,34.81,80.0,52.89,"git, machine learning, numpy, pandas, python, scikit-learn, sql, tensorflow","github, nlp",Consider
+4,candidate_02.pdf,33.94,80.0,52.36,"git, github, machine learning, numpy, pandas, python, scikit-learn, sql","nlp, tensorflow",Consider
+5,candidate_10.pdf,31.84,80.0,51.1,"git, github, machine learning, numpy, pandas, python, scikit-learn, sql","nlp, tensorflow",Consider
+6,candidate_05.pdf,23.32,80.0,45.99,"machine learning, nlp, numpy, pandas, python, scikit-learn, sql, tensorflow","git, github",Not Recommended
+7,candidate_06.pdf,15.1,50.0,29.06,"git, numpy, pandas, python, sql","github, machine learning, nlp, scikit-learn, tensorflow",Not Recommended
+8,candidate_03.pdf,9.45,40.0,21.67,"numpy, pandas, python, sql","git, github, machine learning, nlp, scikit-learn, tensorflow",Not Recommended
+9,candidate_04.pdf,7.52,40.0,20.51,"git, github, python, sql","machine learning, nlp, numpy, pandas, scikit-learn, tensorflow",Not Recommended
+10,candidate_08.pdf,6.53,40.0,19.92,"git, github, python, sql","machine learning, nlp, numpy, pandas, scikit-learn, tensorflow",Not Recommended

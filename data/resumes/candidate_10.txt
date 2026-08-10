@@ -1,0 +1,32 @@
+Name: Arjun Malhotra
+
+Email: arjun@example.com
+
+Education:
+B.Tech Computer Science
+
+Skills:
+Python
+Java
+SQL
+Machine Learning
+Pandas
+NumPy
+Scikit-learn
+Docker
+AWS
+Git
+GitHub
+
+Experience:
+2 years
+
+
+Projects:
+Cloud-Based ML Application
+Fraud Detection System
+Recommendation Engine
+
+Certifications:
+AWS Certification
+Machine Learning Certification
