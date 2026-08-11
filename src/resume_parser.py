@@ -2,7 +2,7 @@ import re
 
 
 # ============================================================
-# BASIC CLEANING
+# TEXT CLEANING
 # ============================================================
 
 def clean_line(line):
@@ -11,479 +11,340 @@ def clean_line(line):
     if not line:
         return ""
 
+    line = str(line)
+
+    # Non-breaking space
     line = line.replace("\u00a0", " ")
 
-    # Normalize whitespace
-    line = re.sub(r"\s+", " ", line).strip()
+    # PDF soft hyphen
+    line = line.replace("\u00ad", "")
 
-    return line
+    # Normalize whitespace
+    line = re.sub(r"\s+", " ", line)
+
+    return line.strip()
 
 
 def get_clean_lines(text):
-    """Return non-empty cleaned lines."""
+    """Return cleaned non-empty lines."""
 
     if not text:
         return []
 
-    return [
-        clean_line(line)
-        for line in text.splitlines()
-        if clean_line(line)
-    ]
+    lines = []
+
+    for line in text.splitlines():
+
+        line = clean_line(line)
+
+        if line:
+            lines.append(line)
+
+    return lines
 
 
 # ============================================================
-# SECTION HEADINGS
+# SECTION DEFINITIONS
 # ============================================================
 
-SECTION_HEADINGS = {
-    "professional summary",
-    "summary",
-    "profile",
-    "objective",
+SECTION_ALIASES = {
 
-    "education",
-    "academic background",
-    "educational background",
-    "academic qualifications",
-    "qualification",
-    "qualifications",
+    "summary": {
+        "summary",
+        "professional summary",
+        "profile",
+        "professional profile",
+        "career objective",
+        "objective",
+    },
 
-    "technical skills",
-    "technical skill",
-    "skills",
-    "key skills",
-    "core skills",
+    "contact": {
+        "contact",
+        "contact information",
+        "personal information",
+    },
 
-    "experience",
-    "work experience",
-    "professional experience",
-    "employment history",
-    "work history",
+    "education": {
+        "education",
+        "educational background",
+        "academic background",
+        "academic qualifications",
+        "qualification",
+        "qualifications",
+    },
 
-    "internship",
-    "internships",
-    "internship experience",
-    "virtual internships",
+    "skills": {
+        "skills",
+        "technical skills",
+        "technical skill",
+        "key skills",
+        "core skills",
+        "technical expertise",
+    },
 
-    "projects",
-    "project",
-    "academic projects",
-    "personal projects",
-    "project experience",
+    "experience": {
+        "experience",
+        "work experience",
+        "professional experience",
+        "employment history",
+        "work history",
+        "career experience",
+    },
 
-    "certifications",
-    "certification",
-    "certificates",
-    "licenses and certifications",
+    "internships": {
+        "internship",
+        "internships",
+        "internship experience",
+        "virtual internships",
+    },
 
-    "achievements",
-    "accomplishments",
-    "awards",
+    "projects": {
+        "projects",
+        "project",
+        "project experience",
+        "academic projects",
+        "personal projects",
+    },
 
-    "languages",
-    "interests",
-    "contact",
-    "references",
+    "certifications": {
+        "certifications",
+        "certification",
+        "certificates",
+        "licenses and certifications",
+    },
+
+    "achievements": {
+        "achievements",
+        "accomplishments",
+        "awards",
+    },
+
+    "languages": {
+        "languages",
+        "language",
+    },
+
+    "interests": {
+        "interests",
+        "hobbies",
+        "hobbies and interests",
+    },
 }
 
 
+# Reverse lookup
+HEADING_TO_SECTION = {}
+
+for section, aliases in SECTION_ALIASES.items():
+
+    for alias in aliases:
+
+        HEADING_TO_SECTION[
+            alias.lower()
+        ] = section
+
+
+# ============================================================
+# HEADING NORMALIZATION
+# ============================================================
+
 def normalize_heading(line):
-    """Normalize a possible section heading."""
+    """
+    Normalize a possible section heading.
+
+    Handles:
+
+        Projects
+        PROJECTS
+        Projects:
+        - Projects
+        • Projects
+        Certifications:
+        CERTIFICATIONS |
+    """
 
     if not line:
         return ""
 
-    line = clean_line(line)
+    value = str(line)
 
-    line = re.sub(
-        r"^[•●▪◦\-\*]+\s*",
-        "",
-        line
+    value = value.replace(
+        "\u00a0",
+        " "
     )
 
-    line = re.sub(
-        r":\s*$",
+    value = value.strip()
+
+    # Remove bullets
+    value = re.sub(
+        r"^[•●▪◦\-\*\|]+\s*",
         "",
-        line
+        value
     )
 
-    return line.lower().strip()
+    # Remove punctuation from beginning
+    value = re.sub(
+        r"^[#:;|]+\s*",
+        "",
+        value
+    )
+
+    # Remove punctuation from end
+    value = re.sub(
+        r"[\s:;,#|]+$",
+        "",
+        value
+    )
+
+    # Normalize spaces
+    value = re.sub(
+        r"\s+",
+        " ",
+        value
+    )
+
+    return value.lower().strip()
+
+
+def compact_text(value):
+    """Remove everything except alphabetic characters."""
+
+    return re.sub(
+        r"[^a-z]",
+        "",
+        value.lower()
+    )
+
+
+def get_heading_section(line):
+    """
+    Detect a resume section heading.
+
+    This function is intentionally strict:
+    only a complete heading is accepted.
+
+    Therefore normal project text containing words such as
+    'project' will NOT become a heading.
+    """
+
+    if not line:
+        return None
+
+    normalized = normalize_heading(line)
+
+    # Exact match
+    if normalized in HEADING_TO_SECTION:
+
+        return HEADING_TO_SECTION[
+            normalized
+        ]
+
+    # Handle PDF text with spaced letters:
+    #
+    # C e r t i f i c a t i o n s
+    # P r o j e c t s
+    #
+    compact = compact_text(
+        normalized
+    )
+
+    if not compact:
+        return None
+
+    for heading, section in HEADING_TO_SECTION.items():
+
+        if compact == compact_text(
+            heading
+        ):
+            return section
+
+    return None
 
 
 def is_section_heading(line):
-    """Return True if line is a known section heading."""
-
-    return normalize_heading(line) in SECTION_HEADINGS
-
-
-# ============================================================
-# PDF CHARACTER SPACING
-# ============================================================
-
-def is_spaced_character_line(line):
-    """
-    Detect PDF extraction such as:
-
-    M O H D N A V E D A B B A S
-    """
-
-    words = line.split()
-
-    if len(words) < 6:
-        return False
-
-    single_letters = [
-        word
-        for word in words
-        if len(word) == 1 and word.isalpha()
-    ]
+    """Return True if line is a real section heading."""
 
     return (
-        len(single_letters) >= 6
-        and len(single_letters) / len(words) >= 0.70
+        get_heading_section(line)
+        is not None
     )
 
 
-def compact_spaced_line(line):
-    """Remove artificial spaces between PDF characters."""
-
-    if not is_spaced_character_line(line):
-        return line
-
-    return "".join(line.split())
-
-
 # ============================================================
-# NAME VALIDATION
+# HARD SECTION HEADING
 # ============================================================
 
-NAME_REJECT_WORDS = {
-    "resume",
-    "curriculum",
-    "vitae",
-    "profile",
-    "summary",
-    "objective",
-    "education",
-    "experience",
-    "projects",
-    "project",
-    "skills",
-    "technical",
-    "certifications",
-    "certification",
-    "developer",
-    "engineer",
-    "enthusiast",
-    "student",
-    "analyst",
-    "professional",
-    "programmer",
-    "intern",
-    "internship",
-    "software",
-    "development",
-    "machine",
-    "learning",
-    "python",
-    "data",
-    "science",
-    "computer",
-}
-
-
-def valid_name_format(name):
-    """Check whether text looks like a person's name."""
-
-    if not name:
-        return False
-
-    name = clean_line(name)
-
-    if len(name) < 3 or len(name) > 70:
-        return False
-
-    if "@" in name:
-        return False
-
-    if "|" in name:
-        return False
-
-    if any(char.isdigit() for char in name):
-        return False
-
-    words = name.split()
-
-    if not 2 <= len(words) <= 5:
-        return False
-
-    for word in words:
-
-        if not re.fullmatch(
-            r"[A-Za-z][A-Za-z.'-]*",
-            word
-        ):
-            return False
-
-    if any(
-        word.lower() in NAME_REJECT_WORDS
-        for word in words
-    ):
-        return False
-
-    return True
-
-
-# ============================================================
-# RECOVER SPACED NAME
-# ============================================================
-
-COMMON_NAME_WORDS = {
-    "aarav",
-    "aaryan",
-    "aditya",
-    "aman",
-    "amit",
-    "ankit",
-    "arjun",
-    "ashish",
-    "ayush",
-    "deepak",
-    "gaurav",
-    "harsh",
-    "imran",
-    "karan",
-    "mohd",
-    "mohammed",
-    "mohammad",
-    "naveen",
-    "naved",
-    "neeraj",
-    "nikhil",
-    "rahul",
-    "raj",
-    "rohan",
-    "sachin",
-    "sahil",
-    "sameer",
-    "shubham",
-    "sumit",
-    "varun",
-    "vishal",
-    "yash",
-
-    # Important for your resume
-    "abbas",
-}
-
-
-def recover_spaced_name(compact):
+def get_hard_heading(line):
     """
-    Recover a name from a PDF string such as:
+    Extra-safe heading detector.
 
-        MOHDNAVEDABBAS
+    This is used before adding a line to Projects or
+    Certifications.
 
-    ->
-
-        MOHD NAVED ABBAS
+    It catches headings even when PDF extraction adds
+    bullets or punctuation.
     """
 
-    if not compact:
-        return ""
+    if not line:
+        return None
 
-    compact = re.sub(
-        r"[^A-Za-z]",
+    value = str(line).strip()
+
+    # Remove bullets
+    value = re.sub(
+        r"^[•●▪◦\-\*\|]+\s*",
         "",
-        compact
+        value
+    )
+
+    # Remove colon
+    value = value.rstrip(
+        " :;,#|"
+    ).strip()
+
+    normalized = re.sub(
+        r"\s+",
+        " ",
+        value
     ).lower()
 
-    if not compact:
-        return ""
+    # Exact known heading
+    if normalized in HEADING_TO_SECTION:
 
-    # --------------------------------------------------------
-    # Dynamic word segmentation using known name words
-    # --------------------------------------------------------
+        return HEADING_TO_SECTION[
+            normalized
+        ]
 
-    memo = {}
+    # Compact form
+    compact = compact_text(
+        normalized
+    )
 
-    def segment(value):
+    for heading, section in HEADING_TO_SECTION.items():
 
-        if value == "":
-            return []
-
-        if value in memo:
-            return memo[value]
-
-        solutions = []
-
-        for word in COMMON_NAME_WORDS:
-
-            if value.startswith(word):
-
-                remainder = value[len(word):]
-
-                result = segment(remainder)
-
-                if result is not None:
-
-                    solutions.append(
-                        [word] + result
-                    )
-
-        if not solutions:
-
-            memo[value] = None
-            return None
-
-        # Prefer fewer, longer words
-        solutions.sort(
-            key=lambda x: (
-                len(x),
-                -sum(len(w) for w in x)
-            )
-        )
-
-        memo[value] = solutions[0]
-
-        return solutions[0]
-
-    result = segment(compact)
-
-    if not result:
-        return ""
-
-    if not 2 <= len(result) <= 4:
-        return ""
-
-    name = " ".join(result).upper()
-
-    if valid_name_format(name):
-        return name
-
-    return ""
-
-
-# ============================================================
-# NAME EXTRACTION
-# ============================================================
-
-def extract_name(text):
-    """
-    Extract candidate name.
-
-    Handles:
-
-    Name: John Smith
-
-    JOHN SMITH
-
-    M O H D N A V E D A B B A S
-
-    MOHDNAVEDABBAS
-    """
-
-    lines = get_clean_lines(text)
-
-    if not lines:
-        return ""
-
-    # --------------------------------------------------------
-    # 1. Explicit Name: field
-    # --------------------------------------------------------
-
-    for line in lines[:20]:
-
-        match = re.match(
-            r"^(?:name|candidate name)"
-            r"\s*[:\-]\s*(.+)$",
-            line,
-            re.IGNORECASE
-        )
-
-        if match:
-
-            candidate = clean_line(
-                match.group(1)
-            )
-
-            if valid_name_format(candidate):
-                return candidate
-
-    # --------------------------------------------------------
-    # 2. Look specifically for PDF spaced name
-    # --------------------------------------------------------
-
-    for line in lines[:30]:
-
-        if is_spaced_character_line(line):
-
-            compact = compact_spaced_line(
-                line
-            )
-
-            recovered = recover_spaced_name(
-                compact
-            )
-
-            if recovered:
-                return recovered
-
-    # --------------------------------------------------------
-    # 3. Look for compact uppercase name
-    # --------------------------------------------------------
-
-    for line in lines[:30]:
-
-        compact = re.sub(
-            r"[^A-Za-z]",
-            "",
-            line
-        )
-
-        if (
-            line.isupper()
-            and valid_name_format(line)
+        if compact == compact_text(
+            heading
         ):
-            return line
+            return section
 
-        recovered = recover_spaced_name(
-            compact
-        )
+    return None
 
-        if recovered:
-            return recovered
 
-    # --------------------------------------------------------
-    # 4. Conservative fallback
-    #
-    # DO NOT simply return the first line.
-    # --------------------------------------------------------
+# ============================================================
+# BULLET HANDLING
+# ============================================================
 
-    for line in lines[:15]:
+def remove_bullet(line):
+    """Remove common bullet characters."""
 
-        if "|" in line:
-            continue
+    if not line:
+        return ""
 
-        if "@" in line:
-            continue
-
-        if is_section_heading(line):
-            continue
-
-        if valid_name_format(line):
-
-            # Prefer uppercase / title-case names
-            words = line.split()
-
-            if all(
-                word[0].isupper()
-                for word in words
-                if word
-            ):
-                return line
-
-    return ""
+    return re.sub(
+        r"^[•●▪◦\-\*]+\s*",
+        "",
+        line
+    ).strip()
 
 
 # ============================================================
@@ -514,70 +375,443 @@ def extract_email(text):
 
 
 # ============================================================
-# SECTION FINDING
+# PHONE
 # ============================================================
 
-def find_heading_indexes(lines, section_names):
-    """
-    Find all positions of requested section headings.
-    """
+def extract_phone(text):
+    """Extract phone number."""
 
-    wanted = {
-        name.lower()
-        for name in section_names
-    }
+    if not text:
+        return ""
 
-    indexes = []
+    patterns = [
 
-    for index, line in enumerate(lines):
+        r"\+91[\s-]?\d{10}",
 
-        if normalize_heading(line) in wanted:
-            indexes.append(index)
+        r"\+91[\s-]?\d{5}"
+        r"[\s-]?\d{5}",
 
-    return indexes
+        r"\b\d{10}\b",
+
+        r"\b\d{5}"
+        r"[\s-]\d{5}\b",
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text
+        )
+
+        if match:
+            return match.group(0)
+
+    return ""
 
 
-def get_section(lines, section_names):
-    """
-    Standard section extraction.
+# ============================================================
+# CONTACT DETECTION
+# ============================================================
 
-    Used when the PDF has normal section ordering.
-    """
+def is_contact_line(line):
+    """Detect email, phone or online contact information."""
 
-    indexes = find_heading_indexes(
-        lines,
-        section_names
+    if not line:
+        return False
+
+    lower = line.lower()
+
+    # Email
+    if "@" in line:
+        return True
+
+    # Phone
+    if re.search(
+        r"\+?\d[\d\s().-]{8,}\d",
+        line
+    ):
+        return True
+
+    contact_words = (
+        "phone",
+        "mobile",
+        "email",
+        "linkedin",
+        "github.com",
+        "github/",
+        "www.",
+        "http://",
+        "https://",
+        "address",
     )
 
-    if not indexes:
-        return []
+    return any(
+        word in lower
+        for word in contact_words
+    )
 
-    start = indexes[0] + 1
 
-    section_lines = []
+# ============================================================
+# NAME VALIDATION
+# ============================================================
 
-    for line in lines[start:]:
+NAME_REJECT_WORDS = {
 
-        if is_section_heading(line):
+    "resume",
+    "curriculum",
+    "vitae",
+    "profile",
+    "summary",
+    "objective",
+
+    "education",
+    "experience",
+    "projects",
+    "project",
+
+    "skills",
+    "technical",
+
+    "certifications",
+    "certification",
+    "certificate",
+
+    "developer",
+    "engineer",
+    "enthusiast",
+    "student",
+    "analyst",
+    "professional",
+    "programmer",
+
+    "intern",
+    "internship",
+    "internships",
+
+    "software",
+    "development",
+
+    "machine",
+    "learning",
+    "python",
+    "data",
+    "science",
+}
+
+
+def valid_name(name):
+    """Check whether a string looks like a person's name."""
+
+    if not name:
+        return False
+
+    name = clean_line(name)
+
+    if len(name) < 3:
+        return False
+
+    if len(name) > 70:
+        return False
+
+    if "@" in name:
+        return False
+
+    if "|" in name:
+        return False
+
+    if any(
+        character.isdigit()
+        for character in name
+    ):
+        return False
+
+    words = name.split()
+
+    if not 2 <= len(words) <= 5:
+        return False
+
+    for word in words:
+
+        if not re.fullmatch(
+            r"[A-Za-z][A-Za-z.'-]*",
+            word
+        ):
+            return False
+
+    if any(
+        word.lower()
+        in NAME_REJECT_WORDS
+        for word in words
+    ):
+        return False
+
+    return True
+
+
+# ============================================================
+# SPACED NAME
+# ============================================================
+
+def recover_spaced_name(line):
+    """
+    Convert:
+
+        M O H D N A V E D A B B A S
+
+    into:
+
+        MOHD NAVED ABBAS
+
+    for known name patterns.
+    """
+
+    if not line:
+        return ""
+
+    words = line.split()
+
+    # Must contain many single letters
+    if len(words) < 6:
+        return ""
+
+    if not all(
+        len(word) == 1
+        and word.isalpha()
+        for word in words
+    ):
+        return ""
+
+    compact = "".join(
+        words
+    ).lower()
+
+    # Specific common Indian-name patterns.
+    # This is intentionally limited so random text
+    # is not incorrectly treated as a name.
+
+    known_names = {
+        "mohdnavedabbas": "MOHD NAVED ABBAS",
+        "mohammednavedabbas": "MOHAMMED NAVED ABBAS",
+        "mohdnaved": "MOHD NAVED",
+        "navedabbas": "NAVED ABBAS",
+    }
+
+    return known_names.get(
+        compact,
+        ""
+    )
+
+
+# ============================================================
+# NAME EXTRACTION
+# ============================================================
+
+def extract_name(text):
+    """
+    Extract candidate name.
+
+    Handles:
+    - Name: Mohd Naved Abbas
+    - MOHD NAVED ABBAS
+    - M O H D N A V E D A B B A S
+    """
+
+    lines = get_clean_lines(text)
+
+    if not lines:
+        return ""
+
+    # --------------------------------------------------------
+    # 1. Explicit Name field
+    # --------------------------------------------------------
+
+    for line in lines[:40]:
+
+        match = re.match(
+            r"^(?:name|candidate name)"
+            r"\s*[:\-]\s*(.+)$",
+            line,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            candidate = clean_line(
+                match.group(1)
+            )
+
+            if valid_name(candidate):
+
+                return candidate
+
+    # --------------------------------------------------------
+    # 2. Spaced-character name
+    # --------------------------------------------------------
+
+    for line in lines[:40]:
+
+        recovered = recover_spaced_name(
+            line
+        )
+
+        if recovered:
+
+            return recovered
+
+    # --------------------------------------------------------
+    # 3. Uppercase normal name
+    # --------------------------------------------------------
+
+    for line in lines[:40]:
+
+        candidate = remove_bullet(
+            line
+        )
+
+        if (
+            candidate.isupper()
+            and valid_name(candidate)
+        ):
+            return candidate
+
+    # --------------------------------------------------------
+    # 4. Title case
+    # --------------------------------------------------------
+
+    for line in lines[:20]:
+
+        candidate = remove_bullet(
+            line
+        )
+
+        if not valid_name(candidate):
+            continue
+
+        words = candidate.split()
+
+        if all(
+            word[0].isupper()
+            for word in words
+            if word
+        ):
+            return candidate
+
+    return ""
+
+
+# ============================================================
+# NORMAL SECTION EXTRACTION
+# ============================================================
+
+def extract_section_from_heading(
+    lines,
+    target_section
+):
+    """
+    Extract a section when the PDF text is in normal
+    reading order.
+
+    Example:
+
+        Projects
+        Project A
+        Project B
+        Certifications
+        Certificate A
+
+    Projects returns only Project A and Project B.
+    """
+
+    result = []
+
+    inside = False
+
+    for line in lines:
+
+        heading = get_hard_heading(
+            line
+        )
+
+        # Start requested section
+        if heading == target_section:
+
+            inside = True
+
+            continue
+
+        # Stop at another section
+        if (
+            inside
+            and heading is not None
+            and heading != target_section
+        ):
             break
 
-        if line.strip():
-            section_lines.append(line)
+        if inside:
 
-    return section_lines
+            result.append(
+                line
+            )
+
+    return result
 
 
 # ============================================================
 # EDUCATION
 # ============================================================
 
+EDUCATION_KEYWORDS = (
+    "b.tech",
+    "btech",
+    "b.e.",
+    "bachelor",
+    "b.sc",
+    "bsc",
+    "bca",
+    "m.tech",
+    "mtech",
+    "m.e.",
+    "master",
+    "m.sc",
+    "msc",
+    "mca",
+    "ph.d",
+    "phd",
+    "computer science",
+    "information technology",
+    "engineering",
+    "university",
+    "college",
+    "institute",
+    "cgpa",
+    "gpa",
+    "graduation",
+    "degree",
+)
+
+
+def looks_like_education(line):
+    """Detect education-related text."""
+
+    if not line:
+        return False
+
+    lower = line.lower()
+
+    return any(
+        keyword in lower
+        for keyword in EDUCATION_KEYWORDS
+    )
+
+
 def extract_education(text):
     """
-    Extract education information.
+    Extract education.
 
-    Also handles PDFs where EDUCATION is present as a heading
-    but the actual education details appear elsewhere in the
-    extracted text.
+    First tries the actual Education section.
+    If PDF columns scrambled the section, uses
+    controlled education keywords.
     """
 
     lines = get_clean_lines(text)
@@ -586,113 +820,91 @@ def extract_education(text):
     # Normal section
     # --------------------------------------------------------
 
-    education_lines = get_section(
+    section = extract_section_from_heading(
         lines,
-        [
-            "Education",
-            "Academic Background",
-            "Educational Background",
-            "Academic Qualifications",
-            "Qualification",
-            "Qualifications",
-        ]
+        "education"
     )
 
-    if education_lines:
+    result = []
+
+    for line in section:
+
+        line = remove_bullet(line)
+
+        if line:
+            result.append(line)
+
+    if result:
         return "\n".join(
-            education_lines
+            result
         )
 
     # --------------------------------------------------------
-    # Fallback: search complete extracted text
-    # for education keywords.
+    # Scrambled PDF fallback
     # --------------------------------------------------------
 
-    education_matches = []
-
-    education_patterns = [
-        r"B\.?\s*Tech[^,\n]*",
-        r"B\.?\s*E\.?[^,\n]*",
-        r"M\.?\s*Tech[^,\n]*",
-        r"M\.?\s*E\.?[^,\n]*",
-        r"BCA[^,\n]*",
-        r"MCA[^,\n]*",
-        r"BSc[^,\n]*",
-        r"MSc[^,\n]*",
-        r"Computer Science[^,\n]*",
-        r"Meerut Institute of Technology[^,\n]*",
-    ]
-
-    for pattern in education_patterns:
-
-        matches = re.findall(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-
-        for match in matches:
-
-            match = clean_line(match)
-
-            if match and match not in education_matches:
-                education_matches.append(match)
-
-    # --------------------------------------------------------
-    # Add nearby lines containing degree information
-    # --------------------------------------------------------
+    fallback = []
 
     for index, line in enumerate(lines):
 
-        lower = line.lower()
+        if looks_like_education(line):
 
-        if (
-            "b.tech" in lower
-            or "btech" in lower
-            or "computer science" in lower
-            or "institute of technology" in lower
-        ):
+            if line not in fallback:
+                fallback.append(line)
 
-            for candidate in lines[
-                max(0, index - 1):
-                min(len(lines), index + 3)
+            # Include nearby institution/year information
+            for nearby in lines[
+                index + 1:index + 3
             ]:
 
-                if candidate not in education_matches:
-                    education_matches.append(
-                        candidate
+                if (
+                    contains_education_context(
+                        nearby
                     )
+                ):
 
-    # Keep only useful lines
-    useful = []
+                    if nearby not in fallback:
+                        fallback.append(
+                            nearby
+                        )
 
-    for line in education_matches:
+    return "\n".join(
+        fallback[:8]
+    )
 
-        lower = line.lower()
 
-        if any(
-            keyword in lower
-            for keyword in [
-                "b.tech",
-                "btech",
-                "computer science",
-                "institute",
-                "college",
-                "university",
-                "cgpa",
-                "gpa",
-                "2023",
-                "2024",
-                "2025",
-                "2026",
-                "2027",
-            ]
-        ):
+def contains_education_context(line):
+    """Detect education context."""
 
-            if line not in useful:
-                useful.append(line)
+    if not line:
+        return False
 
-    return "\n".join(useful[:10])
+    lower = line.lower()
+
+    patterns = [
+
+        r"\b20\d{2}\b",
+
+        r"\b20\d{2}\s*[-–]\s*20\d{2}\b",
+
+        r"\bcgpa\b",
+
+        r"\bgpa\b",
+
+        r"\bcollege\b",
+
+        r"\buniversity\b",
+
+        r"\binstitute\b",
+    ]
+
+    return any(
+        re.search(
+            pattern,
+            lower
+        )
+        for pattern in patterns
+    )
 
 
 # ============================================================
@@ -700,23 +912,26 @@ def extract_education(text):
 # ============================================================
 
 def extract_experience(text):
-    """Extract professional experience."""
+    """Extract work experience."""
 
     lines = get_clean_lines(text)
 
-    experience_lines = get_section(
+    section = extract_section_from_heading(
         lines,
-        [
-            "Experience",
-            "Work Experience",
-            "Professional Experience",
-            "Employment History",
-            "Work History",
-        ]
+        "experience"
     )
 
+    result = []
+
+    for line in section:
+
+        line = remove_bullet(line)
+
+        if line:
+            result.append(line)
+
     return "\n".join(
-        experience_lines
+        result
     )
 
 
@@ -729,40 +944,118 @@ def extract_internships(text):
 
     lines = get_clean_lines(text)
 
-    internship_lines = get_section(
+    section = extract_section_from_heading(
         lines,
-        [
-            "Internship",
-            "Internships",
-            "Internship Experience",
-            "Virtual Internships",
-        ]
+        "internships"
     )
 
-    if internship_lines:
-        return "\n".join(
-            internship_lines
-        )
+    result = []
 
-    # Fallback: search for internship content
-    results = []
+    for line in section:
 
-    for index, line in enumerate(lines):
+        line = remove_bullet(line)
 
-        if "internship" in line.lower():
-
-            results.append(line)
-
-            # Include next few lines
-            for extra in lines[
-                index + 1:index + 4
-            ]:
-
-                if not is_section_heading(extra):
-                    results.append(extra)
+        if line:
+            result.append(line)
 
     return "\n".join(
-        dict.fromkeys(results)
+        result
+    )
+
+
+# ============================================================
+# PROJECT DETECTION
+# ============================================================
+
+PROJECT_TITLE_KEYWORDS = (
+    "prediction",
+    "detection",
+    "classification",
+    "recommendation",
+    "website",
+    "application",
+    "app",
+    "system",
+    "dashboard",
+    "analyzer",
+    "analysis",
+    "management",
+)
+
+
+PROJECT_TECH_KEYWORDS = (
+    "using python",
+    "using django",
+    "using machine learning",
+    "using scikit",
+    "using tensorflow",
+    "using pandas",
+    "using numpy",
+    "using html",
+    "using css",
+    "using javascript",
+    "ai/ml",
+    "machine learning model",
+)
+
+
+def looks_like_project(line):
+    """Detect project-related text."""
+
+    if not line:
+        return False
+
+    lower = line.lower()
+
+    return (
+        any(
+            keyword in lower
+            for keyword in PROJECT_TITLE_KEYWORDS
+        )
+        or
+        any(
+            keyword in lower
+            for keyword in PROJECT_TECH_KEYWORDS
+        )
+    )
+
+
+# ============================================================
+# CERTIFICATION DETECTION
+# ============================================================
+
+CERTIFICATION_KEYWORDS = (
+    "certification",
+    "certified",
+    "certificate",
+    "skills passport",
+    "skillsbuild",
+    "hp life",
+    "cisco",
+    "tcs ion",
+    "tcs i on",
+    "google for developers",
+    "eduskills",
+    "coursera",
+    "udemy",
+    "linkedin learning",
+    "ibm",
+    "oracle certified",
+    "aws certified",
+)
+
+
+def looks_like_certification(line):
+    """Detect certification-related text."""
+
+    if not line:
+        return False
+
+    lower = line.lower()
+
+    return any(
+        keyword in lower
+        for keyword in CERTIFICATION_KEYWORDS
     )
 
 
@@ -771,62 +1064,125 @@ def extract_internships(text):
 # ============================================================
 
 def extract_projects(text):
-    """Extract projects."""
+    """
+    Extract projects.
+
+    Strategy:
+
+    1. If Projects section is in normal PDF order,
+       extract that section only.
+
+    2. If PDF column extraction scrambled the order,
+       use project-specific signals.
+
+    3. NEVER include:
+       - contact information
+       - certification heading
+       - certification items
+       - education heading
+       - experience heading
+    """
 
     lines = get_clean_lines(text)
 
-    project_lines = get_section(
+    # --------------------------------------------------------
+    # FIRST: normal section extraction
+    # --------------------------------------------------------
+
+    section = extract_section_from_heading(
         lines,
-        [
-            "Projects",
-            "Project",
-            "Academic Projects",
-            "Personal Projects",
-            "Project Experience",
-        ]
+        "projects"
     )
 
     projects = []
 
-    for line in project_lines:
+    for line in section:
 
-        line = re.sub(
-            r"^[•●▪◦\-\*]\s*",
-            "",
+        # HARD STOP
+        heading = get_hard_heading(
             line
-        ).strip()
+        )
 
-        if line:
-            projects.append(line)
+        if heading is not None:
+            break
+
+        clean = remove_bullet(
+            line
+        )
+
+        if not clean:
+            continue
+
+        if is_contact_line(clean):
+            continue
+
+        if looks_like_certification(
+            clean
+        ):
+            continue
+
+        # Explicit certification headings
+        if compact_text(
+            clean.rstrip(":")
+        ) in {
+            "certifications",
+            "certification",
+            "certificates",
+        }:
+            break
+
+        if clean not in projects:
+
+            projects.append(
+                clean
+            )
+
+    if projects:
+
+        return projects
 
     # --------------------------------------------------------
-    # Fallback
+    # SECOND: scrambled-column fallback
     # --------------------------------------------------------
 
-    if not projects:
+    fallback = []
 
-        project_keywords = [
-            "restaurant website",
-            "food chart",
-            "student performance",
-            "house price prediction",
-            "customer churn",
-            "sentiment analysis",
-        ]
+    for line in lines:
 
-        for line in lines:
+        clean = remove_bullet(
+            line
+        )
 
-            lower = line.lower()
+        if not clean:
+            continue
 
-            if any(
-                keyword in lower
-                for keyword in project_keywords
-            ):
+        # Never contact information
+        if is_contact_line(clean):
+            continue
 
-                if line not in projects:
-                    projects.append(line)
+        # Never headings
+        if get_hard_heading(
+            clean
+        ) is not None:
+            continue
 
-    return projects
+        # Never certification text
+        if looks_like_certification(
+            clean
+        ):
+            continue
+
+        if looks_like_project(
+            clean
+        ):
+
+            if clean not in fallback:
+
+                fallback.append(
+                    clean
+                )
+
+    return fallback
 
 
 # ============================================================
@@ -834,63 +1190,94 @@ def extract_projects(text):
 # ============================================================
 
 def extract_certifications(text):
-    """Extract certifications."""
+    """
+    Extract certifications.
+
+    Strategy:
+
+    1. Normal Certifications section.
+    2. If PDF columns are scrambled, identify known
+       certification providers/certification keywords.
+
+    This prevents Projects from swallowing Certifications.
+    """
 
     lines = get_clean_lines(text)
 
-    certification_lines = get_section(
+    # --------------------------------------------------------
+    # FIRST: normal section extraction
+    # --------------------------------------------------------
+
+    section = extract_section_from_heading(
         lines,
-        [
-            "Certifications",
-            "Certification",
-            "Certificates",
-            "Licenses and Certifications",
-        ]
+        "certifications"
     )
 
     certifications = []
 
-    for line in certification_lines:
+    for line in section:
 
-        line = re.sub(
-            r"^[•●▪◦\-\*]\s*",
-            "",
+        heading = get_hard_heading(
             line
-        ).strip()
+        )
 
-        if line:
-            certifications.append(line)
+        if heading is not None:
+            break
+
+        clean = remove_bullet(
+            line
+        )
+
+        if not clean:
+            continue
+
+        if is_contact_line(clean):
+            continue
+
+        if clean not in certifications:
+
+            certifications.append(
+                clean
+            )
+
+    if certifications:
+
+        return certifications
 
     # --------------------------------------------------------
-    # Fallback
+    # SECOND: scrambled-column fallback
     # --------------------------------------------------------
 
-    if not certifications:
+    fallback = []
 
-        certification_keywords = [
-            "certification",
-            "certificate",
-            "skills passport",
-            "skillsbuild",
-            "hp life",
-            "cisco",
-            "tcs ion",
-            "google for developers",
-        ]
+    for line in lines:
 
-        for line in lines:
+        clean = remove_bullet(
+            line
+        )
 
-            lower = line.lower()
+        if not clean:
+            continue
 
-            if any(
-                keyword in lower
-                for keyword in certification_keywords
-            ):
+        if is_contact_line(clean):
+            continue
 
-                if line not in certifications:
-                    certifications.append(line)
+        if get_hard_heading(
+            clean
+        ) is not None:
+            continue
 
-    return certifications
+        if looks_like_certification(
+            clean
+        ):
+
+            if clean not in fallback:
+
+                fallback.append(
+                    clean
+                )
+
+    return fallback
 
 
 # ============================================================
@@ -898,23 +1285,26 @@ def extract_certifications(text):
 # ============================================================
 
 def extract_skills_section(text):
-    """Extract technical skills as raw text."""
+    """Extract raw technical skills section."""
 
     lines = get_clean_lines(text)
 
-    skill_lines = get_section(
+    section = extract_section_from_heading(
         lines,
-        [
-            "Technical Skills",
-            "Technical Skill",
-            "Skills",
-            "Key Skills",
-            "Core Skills",
-        ]
+        "skills"
     )
 
+    result = []
+
+    for line in section:
+
+        line = remove_bullet(line)
+
+        if line:
+            result.append(line)
+
     return "\n".join(
-        skill_lines
+        result
     )
 
 
@@ -927,152 +1317,115 @@ def extract_achievements(text):
 
     lines = get_clean_lines(text)
 
-    achievement_lines = get_section(
+    section = extract_section_from_heading(
         lines,
-        [
-            "Achievements",
-            "Accomplishments",
-            "Awards",
-        ]
+        "achievements"
     )
 
+    result = []
+
+    for line in section:
+
+        line = remove_bullet(line)
+
+        if line:
+            result.append(line)
+
     return "\n".join(
-        achievement_lines
+        result
     )
 
 
 # ============================================================
-# ROBUST SECTION EXTRACTION
+# SUMMARY
+# ============================================================
+
+def extract_summary(text):
+    """Extract professional summary."""
+
+    lines = get_clean_lines(text)
+
+    section = extract_section_from_heading(
+        lines,
+        "summary"
+    )
+
+    result = []
+
+    for line in section:
+
+        line = remove_bullet(line)
+
+        if line:
+            result.append(line)
+
+    return "\n".join(
+        result
+    )
+
+
+# ============================================================
+# COMPLETE SECTION EXTRACTION
 # ============================================================
 
 def extract_resume_sections(text):
     """
-    Extract major resume sections.
-
+    Extract all major resume sections.
     """
 
-    sections = {
-        "education": "",
-        "experience": "",
-        "internships": "",
-        "projects": "",
-        "certifications": "",
-        "skills": "",
-        "achievements": "",
+    projects = extract_projects(
+        text
+    )
+
+    certifications = extract_certifications(
+        text
+    )
+
+    return {
+
+        "summary": extract_summary(
+            text
+        ),
+
+        "education": extract_education(
+            text
+        ),
+
+        "skills": extract_skills_section(
+            text
+        ),
+
+        "experience": extract_experience(
+            text
+        ),
+
+        "internships": extract_internships(
+            text
+        ),
+
+        "projects": "\n".join(
+            projects
+        ),
+
+        "certifications": "\n".join(
+            certifications
+        ),
+
+        "achievements": extract_achievements(
+            text
+        ),
     }
-
-    if not text:
-        return sections
-
-    lines = get_clean_lines(text)
-
-    section_names = {
-
-        "education": [
-            "education",
-            "academic background",
-            "educational background",
-            "academic qualifications",
-            "qualification",
-            "qualifications",
-        ],
-
-        "experience": [
-            "experience",
-            "work experience",
-            "professional experience",
-            "employment history",
-            "work history",
-        ],
-
-        "internships": [
-            "internship",
-            "internships",
-            "internship experience",
-            "virtual internships",
-        ],
-
-        "projects": [
-            "projects",
-            "project",
-            "academic projects",
-            "personal projects",
-            "project experience",
-        ],
-
-        "certifications": [
-            "certifications",
-            "certification",
-            "certificates",
-            "licenses and certifications",
-        ],
-
-        "skills": [
-            "technical skills",
-            "technical skill",
-            "skills",
-            "key skills",
-            "core skills",
-        ],
-
-        "achievements": [
-            "achievements",
-            "accomplishments",
-            "awards",
-        ],
-    }
-
-    heading_lookup = {}
-
-    for section, headings in section_names.items():
-
-        for heading in headings:
-
-            heading_lookup[
-                heading.lower()
-            ] = section
-
-    current_section = None
-
-    for line in lines:
-
-        normalized = normalize_heading(
-            line
-        )
-
-        if normalized in heading_lookup:
-
-            current_section = heading_lookup[
-                normalized
-            ]
-
-            continue
-
-        if current_section:
-
-            sections[current_section] += (
-                line + "\n"
-            )
-
-    for section in sections:
-
-        sections[section] = (
-            sections[section]
-            .strip()
-        )
-
-    return sections
 
 
 # ============================================================
-# MAIN PARSER
+# MAIN RESUME PARSER
 # ============================================================
 
 def parse_resume(text):
     """
-    Parse complete resume.
+    Parse a complete resume.
 
-    This structure remains compatible with app.py.
+    Compatible with the existing app.py.
     """
 
     if not text:
@@ -1090,22 +1443,40 @@ def parse_resume(text):
         }
 
     return {
-        "name": extract_name(text),
 
-        "email": extract_email(text),
+        "name": extract_name(
+            text
+        ),
 
-        "education": extract_education(text),
+        "email": extract_email(
+            text
+        ),
 
-        # AI skill extraction is handled separately
+        "education": extract_education(
+            text
+        ),
+
+        # Skill extraction is handled separately
+        # by skill_extractor.py
         "skills": [],
 
-        "experience": extract_experience(text),
+        "experience": extract_experience(
+            text
+        ),
 
-        "projects": extract_projects(text),
+        "projects": extract_projects(
+            text
+        ),
 
-        "certifications": extract_certifications(text),
+        "certifications": extract_certifications(
+            text
+        ),
 
-        "internships": extract_internships(text),
+        "internships": extract_internships(
+            text
+        ),
 
-        "achievements": extract_achievements(text),
+        "achievements": extract_achievements(
+            text
+        ),
     }

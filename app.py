@@ -159,73 +159,78 @@ def get_section_name(line):
 # EXTRACT RESUME SECTIONS
 # ============================================================
 
-def extract_resume_sections(text):
+def _as_clean_list(value):
+    """Convert parser output into a clean list of non-empty strings."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        value = [value]
+    result = []
+    try:
+        for item in value:
+            item = str(item).strip()
+            item = re.sub(r"^[•●▪◦\-*]+\s*", "", item)
+            item = re.sub(r"^\d+[\.)]\s*", "", item)
+            if item:
+                result.append(item)
+    except TypeError:
+        item = str(value).strip()
+        if item:
+            result.append(item)
+    return result
 
-    sections = {
-        "education": "",
-        "experience": "",
-        "projects": "",
-        "certifications": "",
-        "skills": "",
-        "summary": ""
+
+def _clean_section_items(items, section):
+    """Remove obvious cross-section contamination from parser output."""
+    cleaned = []
+    headings = {
+        "education": {"education", "educational background", "academic background", "academic qualification", "academic qualifications", "qualifications"},
+        "experience": {"experience", "work experience", "professional experience", "work history", "employment history", "internship", "internships", "professional background"},
+        "projects": {"projects", "project", "academic projects", "personal projects", "key projects", "major projects"},
+        "certifications": {"certifications", "certification", "certificates", "certificate", "professional certifications", "certifications and achievements", "certifications achievements", "certifications & achievements"},
+        "skills": {"skills", "technical skills", "technical skill", "skills and technologies", "technical expertise", "technologies", "core skills"},
+        "summary": {"summary", "professional summary", "profile", "professional profile", "career objective", "objective", "about me"},
     }
-
-    if not text:
-        return sections
-
-    lines = [
-        line.strip()
-        for line in text.splitlines()
-        if line.strip()
-    ]
-
-    current_section = None
-
-    for line in lines:
-
-        detected_section = get_section_name(
-            line
-        )
-
-        # ----------------------------------------------------
-        # NEW SECTION FOUND
-        # ----------------------------------------------------
-
-        if detected_section:
-
-            current_section = detected_section
-
+    summary_starts = (
+        "motivated b.tech", "motivated b tech", "passionate about",
+        "seeking internship", "active learner", "strong foundations in",
+        "real-world problems", "real world problems"
+    )
+    for item in items:
+        normalized = normalize_line(item)
+        if not normalized or normalized in headings.get(section, set()):
             continue
-
-        # ----------------------------------------------------
-        # IGNORE CONTACT SECTION
-        # ----------------------------------------------------
-
-        if current_section == "contact":
+        if section == "projects" and (normalized.startswith("certification") or normalized.startswith("certificate")):
             continue
+        if section == "certifications" and normalized in headings["projects"]:
+            continue
+        if section in {"projects", "certifications"} and normalized.startswith(summary_starts):
+            continue
+        cleaned.append(item.strip())
+    return cleaned
 
-        # ----------------------------------------------------
-        # ADD CONTENT
-        # ----------------------------------------------------
 
-        if current_section in sections:
-
-            sections[current_section] += (
-                line + "\n"
-            )
-
-    # --------------------------------------------------------
-    # CLEAN RESULTS
-    # --------------------------------------------------------
-
-    for section in sections:
-
-        sections[section] = (
-            sections[section]
-            .strip()
-        )
-
-    return sections
+def extract_resume_sections(text):
+    """Use resume_parser.py as the source of truth for resume sections."""
+    empty = {"education": "", "experience": "", "projects": "", "certifications": "", "skills": "", "summary": ""}
+    if not text or not text.strip():
+        return empty
+    try:
+        parsed = parse_resume(text)
+    except Exception:
+        parsed = {}
+    if not isinstance(parsed, dict):
+        parsed = {}
+    projects = _clean_section_items(_as_clean_list(parsed.get("projects")), "projects")
+    certifications = _clean_section_items(_as_clean_list(parsed.get("certifications")), "certifications")
+    return {
+        "education": str(parsed.get("education", "") or "").strip(),
+        "experience": str(parsed.get("experience", "") or "").strip(),
+        "projects": "\n".join(projects),
+        "certifications": "\n".join(certifications),
+        "skills": str(parsed.get("skills", "") or "").strip(),
+        "summary": str(parsed.get("summary", "") or "").strip(),
+    }
 
 
 # ============================================================
@@ -797,36 +802,15 @@ if uploaded_file is not None:
         )
 
 
-        projects_text = (
-            resume_sections.get(
-                "projects",
-                ""
-            )
+        projects = _clean_section_items(
+            _as_clean_list(resume_data.get("projects")),
+            "projects",
         )
 
-
-        if projects_text:
-
-            display_section_lines(
-                projects_text
-            )
-
+        if projects:
+            display_list(projects)
         else:
-
-            projects = (
-                resume_data.get(
-                    "projects",
-                    []
-                )
-            )
-
-            if not display_list(
-                projects
-            ):
-
-                st.write(
-                    "No projects detected."
-                )
+            st.write("No projects detected.")
 
 
         # ====================================================
@@ -838,36 +822,15 @@ if uploaded_file is not None:
         )
 
 
-        certifications_text = (
-            resume_sections.get(
-                "certifications",
-                ""
-            )
+        certifications = _clean_section_items(
+            _as_clean_list(resume_data.get("certifications")),
+            "certifications",
         )
 
-
-        if certifications_text:
-
-            display_section_lines(
-                certifications_text
-            )
-
+        if certifications:
+            display_list(certifications)
         else:
-
-            certifications = (
-                resume_data.get(
-                    "certifications",
-                    []
-                )
-            )
-
-            if not display_list(
-                certifications
-            ):
-
-                st.write(
-                    "No certifications detected."
-                )
+            st.write("No certifications detected.")
 
 
         # ====================================================
@@ -1862,37 +1825,15 @@ if (
                     )
 
 
-                    projects_text = (
-                        profile_sections.get(
-                            "projects",
-                            ""
-                        )
+                    projects = _clean_section_items(
+                        _as_clean_list(profile_data.get("projects")),
+                        "projects",
                     )
 
-
-                    if projects_text:
-
-                        display_section_lines(
-                            projects_text
-                        )
-
+                    if projects:
+                        display_list(projects)
                     else:
-
-                        projects = (
-                            profile_data.get(
-                                "projects",
-                                []
-                            )
-                        )
-
-
-                        if not display_list(
-                            projects
-                        ):
-
-                            st.write(
-                                "No projects detected."
-                            )
+                        st.write("No projects detected.")
 
 
                     # ========================================
@@ -1904,37 +1845,15 @@ if (
                     )
 
 
-                    certifications_text = (
-                        profile_sections.get(
-                            "certifications",
-                            ""
-                        )
+                    certifications = _clean_section_items(
+                        _as_clean_list(profile_data.get("certifications")),
+                        "certifications",
                     )
 
-
-                    if certifications_text:
-
-                        display_section_lines(
-                            certifications_text
-                        )
-
+                    if certifications:
+                        display_list(certifications)
                     else:
-
-                        certifications = (
-                            profile_data.get(
-                                "certifications",
-                                []
-                            )
-                        )
-
-
-                        if not display_list(
-                            certifications
-                        ):
-
-                            st.write(
-                                "No certifications detected."
-                            )
+                        st.write("No certifications detected.")
 
 
                     # ========================================
